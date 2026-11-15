@@ -18,12 +18,12 @@ Cada bloco abaixo representa uma tarefa de implementação. As tarefas 09 e 10 s
 
 ## Tarefa 02 — Definir a estrutura de uma tarefa
 
-- [ ] Definir o campo `id` como um identificador único para cada tarefa.
-- [ ] Definir o campo `title` para armazenar o título da tarefa.
-- [ ] Definir o campo `description` para armazenar a descrição detalhada da tarefa.
-- [ ] Definir o campo `completed_at` para armazenar a data de conclusão, iniciando como `null`.
-- [ ] Definir o campo `created_at` para armazenar a data de criação.
-- [ ] Definir o campo `updated_at` para armazenar a data da última atualização e alterá-lo a cada modificação.
+- [x] Definir o campo `id` como um identificador único para cada tarefa.
+- [x] Definir o campo `title` para armazenar o título da tarefa.
+- [x] Definir o campo `description` para armazenar a descrição detalhada da tarefa.
+- [x] Definir o campo `completed_at` para armazenar a data de conclusão, iniciando como `null`.
+- [x] Definir o campo `created_at` para armazenar a data de criação.
+- [x] Definir o campo `updated_at` para armazenar a data da última atualização e alterá-lo a cada modificação.
 
 ---
 
