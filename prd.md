@@ -33,15 +33,15 @@ Cada bloco abaixo representa uma tarefa de implementação. As tarefas 09 e 10 s
 
 **Checklist de implementação:**
 
-- [ ] Desenvolver a rota `POST /tasks` para criar uma nova tarefa.
+- [x] Desenvolver a rota `POST /tasks` para criar uma nova tarefa.
 
 **Detalhamento:**
 
-- [ ] Receber `title` e `description` no corpo da requisição.
-- [ ] Criar uma nova tarefa com os dados recebidos.
-- [ ] Gerar automaticamente o `id` único.
-- [ ] Preencher automaticamente `created_at` e `updated_at`.
-- [ ] Inicializar `completed_at` como `null`.
+- [x] Receber `title` e `description` no corpo da requisição.
+- [x] Criar uma nova tarefa com os dados recebidos.
+- [x] Gerar automaticamente o `id` único.
+- [x] Preencher automaticamente `created_at` e `updated_at`.
+- [x] Inicializar `completed_at` como `null`.
 
 ---
 

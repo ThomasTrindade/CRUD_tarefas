@@ -2,7 +2,7 @@
 
 Projeto em Node.js para praticar CRUD e manipulação de arquivos, conforme o `prd.md`.
 
-As Tarefas 01 e 02 preparam o servidor HTTP, o registro de rotas, o armazenamento JSON e o modelo de tarefa. As rotas de tarefas serão implementadas nas próximas etapas do PRD.
+As Tarefas 01 a 03 preparam o servidor HTTP, o registro de rotas, o armazenamento JSON, o modelo de tarefa e a criação de tarefas pela rota `POST /tasks`.
 
 ## Requisitos
 
@@ -40,6 +40,27 @@ Faça uma requisição `GET http://localhost:3333/health`. A resposta será `200
 
 Rotas ainda não implementadas retornam `404` com uma mensagem em JSON.
 
+## Criar uma tarefa
+
+Envie uma requisição `POST http://localhost:3333/tasks` com `Content-Type: application/json` e o corpo:
+
+```json
+{
+  "title": "Estudar Node.js",
+  "description": "Praticar manipulação de arquivos."
+}
+```
+
+A resposta será `201` com a tarefa criada. O servidor gera `id`, `created_at` e `updated_at`, inicia `completed_at` como `null` e salva a tarefa em `data/tasks.json`, preservando as anteriores.
+
+No PowerShell:
+
+```powershell
+Invoke-RestMethod -Method Post -Uri 'http://localhost:3333/tasks' -ContentType 'application/json; charset=utf-8' -Body '{"title":"Estudar Node.js","description":"Praticar arquivos JSON."}'
+```
+
+JSON inválido ou um corpo que não seja um objeto JSON retorna `400`. A validação da presença de `title` e `description` está prevista na Tarefa 09 do PRD.
+
 ## Estrutura
 
 ```text
@@ -51,6 +72,7 @@ src/
   task.js      # Estrutura, criação e atualização dos dados de uma tarefa
 test/
   task.test.js # Verificação das regras do modelo
+  routes.test.js # Verificação da criação de tarefas pela API
 data/
   tasks.json   # Criado automaticamente ao iniciar a API
 ```
