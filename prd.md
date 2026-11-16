@@ -162,6 +162,6 @@ Task 05,Descrição da Task 05
 
 ## Tarefa 10 — Informar quando uma tarefa não existir (opcional)
 
-- [ ] Retornar uma mensagem informando que o registro não existe quando o `id` não for encontrado em `PUT /tasks/:id`.
-- [ ] Retornar uma mensagem informando que o registro não existe quando o `id` não for encontrado em `DELETE /tasks/:id`.
-- [ ] Retornar uma mensagem informando que o registro não existe quando o `id` não for encontrado na rota `PATCH` de conclusão.
+- [x] Retornar uma mensagem informando que o registro não existe quando o `id` não for encontrado em `PUT /tasks/:id`.
+- [x] Retornar uma mensagem informando que o registro não existe quando o `id` não for encontrado em `DELETE /tasks/:id`.
+- [x] Retornar uma mensagem informando que o registro não existe quando o `id` não for encontrado na rota `PATCH` de conclusão.

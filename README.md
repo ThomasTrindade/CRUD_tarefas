@@ -8,6 +8,8 @@ A Tarefa 08 adiciona o script `import-csv.js` para importar tarefas de um CSV pe
 
 A Tarefa 09 valida os campos `title` e `description` na criação e na atualização de tarefas.
 
+A Tarefa 10 retorna `404` com a mensagem `Tarefa não encontrada.` quando o ID não existe nas rotas de atualização, remoção e conclusão.
+
 ## Requisitos
 
 - Node.js 22 ou superior.
