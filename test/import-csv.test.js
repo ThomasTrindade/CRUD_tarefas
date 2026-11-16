@@ -83,7 +83,7 @@ test('importa o CSV pela API real, ignora o cabeçalho e preserva os dados do ar
     + '"Estudar Node.js","Praticar CSV, JSON e acentuação."\r\n'
     + '\r\n'
     + '"Revisar ""aspas""","Primeira linha\r\nSegunda linha"\r\n'
-    + ',\r\n',
+    + '  Tarefa com espaços  ,  Preservar os espaços do texto.  \r\n',
   );
   const result = await runImport([path, `${url}/`]);
 
@@ -97,13 +97,48 @@ test('importa o CSV pela API real, ignora o cabeçalho e preserva os dados do ar
   assert.deepEqual(tasks.slice(1).map(({ title, description }) => ({ title, description })), [
     { title: 'Estudar Node.js', description: 'Praticar CSV, JSON e acentuação.' },
     { title: 'Revisar "aspas"', description: 'Primeira linha\r\nSegunda linha' },
-    { title: '', description: '' },
+    { title: '  Tarefa com espaços  ', description: '  Preservar os espaços do texto.  ' },
   ]);
   assert.equal(new Set(tasks.map((task) => task.id)).size, 4);
   assert.ok(tasks.slice(1).every((task) => task.completed_at === null));
   const savedTasks = JSON.parse(await readFile(join(directory, 'data/tasks.json'), 'utf8'));
   assert.deepEqual(savedTasks, tasks);
 });
+
+for (const { name, row } of [
+  { name: 'título vazio', row: ',Descrição válida.' },
+  { name: 'descrição vazia', row: 'Título válido,' },
+  { name: 'título somente com espaços', row: '   ,Descrição válida.' },
+  { name: 'descrição somente com espaços', row: 'Título válido, \t ' },
+]) {
+  test(`interrompe a importação pela API real ao receber ${name}`, async () => {
+    await cp(new URL('../src/', import.meta.url), join(directory, 'src'), { recursive: true });
+    await cp(new URL('../package.json', import.meta.url), join(directory, 'package.json'));
+    const { app } = await import(pathToFileURL(join(directory, 'src/app.js')).href);
+    const url = await listen(app);
+    const path = await createCsv(
+      'title,description\n'
+      + 'Primeira tarefa,Deve permanecer salva.\n'
+      + `${row}\n`
+      + 'Última tarefa,Não deve ser importada.\n',
+    );
+    const result = await runImport([path, url]);
+
+    assert.equal(result.code, 1);
+    assert.match(result.stderr, /registro 2: HTTP 400/);
+    assert.match(result.stderr, /1 tarefa\(s\) importada\(s\) antes do erro\./);
+    assert.doesNotMatch(result.stdout, /Importação concluída/);
+
+    const response = await fetch(`${url}/tasks`);
+    assert.equal(response.status, 200);
+    const tasks = await response.json();
+    assert.deepEqual(tasks.map(({ title, description }) => ({ title, description })), [
+      { title: 'Primeira tarefa', description: 'Deve permanecer salva.' },
+    ]);
+    const savedTasks = JSON.parse(await readFile(join(directory, 'data/tasks.json'), 'utf8'));
+    assert.deepEqual(savedTasks, tasks);
+  });
+}
 
 test('informa o uso e erros de leitura com saída de erro', async () => {
   const missingArgument = await runImport([]);

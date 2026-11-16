@@ -6,6 +6,8 @@ As Tarefas 01 a 07 preparam o servidor HTTP, o registro de rotas, o armazenament
 
 A Tarefa 08 adiciona o script `import-csv.js` para importar tarefas de um CSV pela rota `POST /tasks`.
 
+A Tarefa 09 valida os campos `title` e `description` na criação e na atualização de tarefas.
+
 ## Requisitos
 
 - Node.js 22 ou superior.
@@ -61,7 +63,9 @@ No PowerShell:
 Invoke-RestMethod -Method Post -Uri 'http://localhost:3333/tasks' -ContentType 'application/json; charset=utf-8' -Body '{"title":"Estudar Node.js","description":"Praticar arquivos JSON."}'
 ```
 
-JSON inválido ou um corpo que não seja um objeto JSON retorna `400`. A validação da presença de `title` e `description` está prevista na Tarefa 09 do PRD.
+Os campos `title` e `description` são obrigatórios e devem ser textos não vazios. Valores `null`, números, booleanos, objetos, arrays, textos vazios ou compostos apenas por espaços em branco retornam `400`. JSON inválido ou um corpo que não seja um objeto JSON também retorna `400`.
+
+O erro informa o campo inválido, por exemplo: `{"message":"O campo title deve ser um texto não vazio."}`. Nenhuma tarefa é criada em caso de erro. Espaços e quebras de linha em textos válidos são preservados.
 
 ## Listar e buscar tarefas
 
@@ -101,7 +105,9 @@ No PowerShell, substitua `ID_DA_TAREFA` pelo `id` retornado na criação:
 Invoke-RestMethod -Method Put -Uri 'http://localhost:3333/tasks/ID_DA_TAREFA' -ContentType 'application/json; charset=utf-8' -Body '{"title":"Revisar Node.js"}'
 ```
 
-Se a tarefa não existir, a resposta será `404` com `{"message":"Tarefa não encontrada."}`. JSON inválido ou um corpo que não seja um objeto JSON retorna `400`. A validação dos valores de `title` e `description` continua prevista na Tarefa 09.
+Informe pelo menos um dos campos `title` ou `description`, usando texto não vazio. Apenas os campos enviados são validados. Valores inválidos seguem as mesmas regras da criação e retornam `400`, sem alterar os dados salvos, incluindo `updated_at`. Um objeto vazio ou contendo somente outros campos retorna `400` com `{"message":"Informe title e/ou description para atualizar a tarefa."}`.
+
+Se os dados forem válidos e a tarefa não existir, a resposta será `404` com `{"message":"Tarefa não encontrada."}`. JSON inválido ou um corpo que não seja um objeto JSON retorna `400`.
 
 ## Remover uma tarefa
 
@@ -151,7 +157,7 @@ Estudar Node.js,Praticar arquivos JSON.
 Revisar projeto,"Conferir rotas, testes e documentação."
 ```
 
-O script usa `csv-parse` e `for await`, ignora o cabeçalho e as linhas vazias e envia uma requisição `POST /tasks` por registro. Campos com vírgulas ou quebras de linha devem ficar entre aspas duplas. Cada registro deve ter dois campos.
+O script usa `csv-parse` e `for await`, ignora o cabeçalho e as linhas vazias e envia uma requisição `POST /tasks` por registro. Campos com vírgulas ou quebras de linha devem ficar entre aspas duplas. Cada registro deve ter dois campos com texto não vazio. Um campo vazio ou composto apenas por espaços em branco faz a API retornar `400` e interrompe a importação.
 
 A URL padrão é `http://localhost:3333`. O script também respeita `PORT`, se definida no terminal da importação. Para informar outra URL da API:
 
@@ -209,4 +215,4 @@ npm test
 
 No PowerShell, também é possível usar `npm.cmd test`.
 
-Os testes verificam as regras do modelo, as rotas da API e a importação de CSV, incluindo a conclusão e a reabertura de tarefas, o retorno para ID inexistente, a persistência dos dados, as alterações simultâneas e os erros de importação.
+Os testes verificam as regras do modelo, as rotas da API e a importação de CSV, incluindo a conclusão e a reabertura de tarefas, o retorno para ID inexistente, a persistência dos dados, as alterações simultâneas, a validação dos campos e os erros de importação.

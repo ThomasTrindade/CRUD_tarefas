@@ -155,8 +155,8 @@ Task 05,Descrição da Task 05
 
 ## Tarefa 09 — Validar os dados recebidos (opcional)
 
-- [ ] Validar a presença de `title` e `description` no corpo das requisições de criação (`POST /tasks`).
-- [ ] Validar os campos recebidos nas requisições de atualização (`PUT /tasks/:id`), respeitando a regra de permitir `title` e/ou `description`.
+- [x] Validar a presença de `title` e `description` no corpo das requisições de criação (`POST /tasks`).
+- [x] Validar os campos recebidos nas requisições de atualização (`PUT /tasks/:id`), respeitando a regra de permitir `title` e/ou `description`.
 
 ---
 

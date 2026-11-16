@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { once } from 'node:events';
-import { cp, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, test } from 'node:test';
@@ -125,14 +125,16 @@ test('GET /tasks busca por trechos do título e da descrição e combina os filt
   assert.deepEqual(await readSavedTasks(), tasks);
 });
 
-test('GET /tasks aceita registros com título ou descrição ausentes ou sem texto', async () => {
-  const tasks = await createSavedTasks([
+test('GET /tasks lista e busca registros antigos com campos ausentes ou sem texto', async () => {
+  const tasks = [
     {},
     { title: null, description: null },
     { title: 42, description: true },
     { title: 'Estudar Node.js' },
     { description: 'Praticar arquivos JSON.' },
-  ]);
+  ];
+  await mkdir(join(directory, 'data'), { recursive: true });
+  await writeFile(join(directory, 'data/tasks.json'), JSON.stringify(tasks), 'utf8');
   const searches = [
     { filters: {}, expected: tasks },
     { filters: { title: 'node' }, expected: [tasks[3]] },
@@ -227,6 +229,63 @@ test('POST /tasks rejeita JSON inválido e corpos que não são objetos sem alte
   }
 });
 
+test('POST /tasks exige título e descrição sem alterar os dados em caso de erro', async () => {
+  const tasks = await createSavedTasks([
+    { title: 'Tarefa existente', description: 'Deve permanecer salva.' },
+  ]);
+  const inputs = [
+    { data: {}, field: 'title' },
+    { data: { description: 'Uma descrição.' }, field: 'title' },
+    { data: { title: 'Um título' }, field: 'description' },
+  ];
+
+  for (const { data, field } of inputs) {
+    const response = await postTask(JSON.stringify(data));
+
+    assert.equal(response.status, 400);
+    assert.deepEqual(await response.json(), {
+      message: `O campo ${field} deve ser um texto não vazio.`,
+    });
+    assert.deepEqual(await readSavedTasks(), tasks);
+  }
+});
+
+test('POST /tasks rejeita campos vazios e valores que não são textos sem alterar os dados', async () => {
+  const tasks = await createSavedTasks([
+    { title: 'Tarefa existente', description: 'Deve permanecer salva.' },
+  ]);
+
+  for (const field of ['title', 'description']) {
+    for (const value of ['', '   ', '\t\n', null, 42, true, false, {}, []]) {
+      const data = { title: 'Um título', description: 'Uma descrição.', [field]: value };
+      const response = await postTask(JSON.stringify(data));
+
+      assert.equal(response.status, 400, JSON.stringify(data));
+      assert.deepEqual(await response.json(), {
+        message: `O campo ${field} deve ser um texto não vazio.`,
+      });
+      assert.deepEqual(await readSavedTasks(), tasks);
+    }
+  }
+});
+
+test('POST e PUT preservam espaços e quebras de linha em textos válidos', async () => {
+  const input = { title: '  Estudar Node.js  ', description: '  Primeira linha\nSegunda linha  ' };
+  const response = await postTask(JSON.stringify(input));
+  assert.equal(response.status, 201);
+  const task = await response.json();
+  assert.equal(task.title, input.title);
+  assert.equal(task.description, input.description);
+  assert.deepEqual(await readSavedTasks(), [task]);
+
+  const changes = { title: '  Revisar Node.js  ', description: '  Outra linha\nMais detalhes  ' };
+  const updatedResponse = await putTask(task.id, JSON.stringify(changes));
+  assert.equal(updatedResponse.status, 200);
+  const updated = await updatedResponse.json();
+  assert.deepEqual(updated, { ...task, ...changes, updated_at: updated.updated_at });
+  assert.deepEqual(await readSavedTasks(), [updated]);
+});
+
 test('PUT /tasks/:id atualiza os campos informados e preserva os demais dados', async () => {
   const tasks = await createSavedTasks([
     { title: 'Estudar Node.js', description: 'Praticar arquivos JSON.' },
@@ -241,7 +300,6 @@ test('PUT /tasks/:id atualiza os campos informados e preserva os demais dados', 
     { title: 'Revisar Node.js' },
     { description: 'Conferir a atualização de tarefas.' },
     { title: 'Revisar o projeto', description: 'Conferir as rotas.' },
-    { title: '', description: '' },
   ];
 
   for (const change of changes) {
@@ -299,6 +357,47 @@ test('PUT /tasks/:id rejeita JSON inválido e corpos que não são objetos sem a
     assert.equal(response.status, 400, `Corpo recebido: ${body}`);
     assert.equal(typeof error.message, 'string');
     assert.deepEqual(await readSavedTasks(), tasks);
+  }
+});
+
+test('PUT /tasks/:id exige ao menos título ou descrição sem alterar os dados', async () => {
+  const tasks = await createSavedTasks([
+    { title: 'Tarefa existente', description: 'Deve permanecer salva.' },
+  ]);
+
+  for (const data of [{}, { unexpected: true }, { id: 'outro-id', completed_at: null }]) {
+    const response = await putTask(tasks[0].id, JSON.stringify(data));
+
+    assert.equal(response.status, 400);
+    assert.deepEqual(await response.json(), {
+      message: 'Informe title e/ou description para atualizar a tarefa.',
+    });
+    assert.deepEqual(await readSavedTasks(), tasks);
+  }
+});
+
+test('PUT /tasks/:id rejeita qualquer campo inválido sem salvar mudanças parciais', async () => {
+  const tasks = await createSavedTasks([
+    { title: 'Tarefa existente', description: 'Deve permanecer salva.' },
+  ]);
+
+  for (const field of ['title', 'description']) {
+    for (const value of ['', '   ', '\t\n', null, 42, true, false, {}, []]) {
+      const inputs = [
+        { [field]: value },
+        { title: 'Novo título', description: 'Nova descrição.', [field]: value },
+      ];
+
+      for (const data of inputs) {
+        const response = await putTask(tasks[0].id, JSON.stringify(data));
+
+        assert.equal(response.status, 400, JSON.stringify(data));
+        assert.deepEqual(await response.json(), {
+          message: `O campo ${field} deve ser um texto não vazio.`,
+        });
+        assert.deepEqual(await readSavedTasks(), tasks);
+      }
+    }
   }
 });
 

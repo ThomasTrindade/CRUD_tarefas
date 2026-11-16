@@ -1,6 +1,24 @@
 import { addTask, deleteTaskById, readTasks, toggleTaskById, updateTaskById } from './database.js';
 import { createTask } from './task.js';
 
+function validateTask(data, isUpdate = false) {
+  if (isUpdate && data.title === undefined && data.description === undefined) {
+    return 'Informe title e/ou description para atualizar a tarefa.';
+  }
+
+  for (const field of ['title', 'description']) {
+    if (isUpdate && data[field] === undefined) {
+      continue;
+    }
+
+    if (typeof data[field] !== 'string' || data[field].trim() === '') {
+      return `O campo ${field} deve ser um texto não vazio.`;
+    }
+  }
+
+  return null;
+}
+
 export const routes = [
   {
     method: 'GET',
@@ -56,6 +74,14 @@ export const routes = [
         return;
       }
 
+      const errorMessage = validateTask(data);
+
+      if (errorMessage) {
+        response.writeHead(400);
+        response.end(JSON.stringify({ message: errorMessage }));
+        return;
+      }
+
       const task = createTask(data);
       await addTask(task);
 
@@ -87,6 +113,14 @@ export const routes = [
       if (data === null || typeof data !== 'object' || Array.isArray(data)) {
         response.writeHead(400);
         response.end(JSON.stringify({ message: 'O corpo deve ser um objeto JSON.' }));
+        return;
+      }
+
+      const errorMessage = validateTask(data, true);
+
+      if (errorMessage) {
+        response.writeHead(400);
+        response.end(JSON.stringify({ message: errorMessage }));
         return;
       }
 
