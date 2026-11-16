@@ -75,3 +75,24 @@ export function deleteTaskById(id) {
   saveQueue = save.catch(() => {});
   return save;
 }
+
+export function toggleTaskById(id) {
+  // Usa a mesma fila para alternar o status sem perder outras alterações.
+  const save = saveQueue.then(async () => {
+    const tasks = await readTasks();
+    const index = tasks.findIndex((task) => task.id === id);
+
+    if (index === -1) {
+      return null;
+    }
+
+    const completedAt = tasks[index].completed_at === null ? new Date().toISOString() : null;
+    const task = updateTask(tasks[index], { completed_at: completedAt });
+    tasks[index] = task;
+    await writeTasks(tasks);
+    return task;
+  });
+
+  saveQueue = save.catch(() => {});
+  return save;
+}

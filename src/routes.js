@@ -1,4 +1,4 @@
-import { addTask, deleteTaskById, readTasks, updateTaskById } from './database.js';
+import { addTask, deleteTaskById, readTasks, toggleTaskById, updateTaskById } from './database.js';
 import { createTask } from './task.js';
 
 export const routes = [
@@ -117,6 +117,23 @@ export const routes = [
 
       response.writeHead(204);
       response.end();
+    },
+  },
+  {
+    method: 'PATCH',
+    path: '/tasks/:id/complete',
+    async handler(request, response) {
+      const { id } = request.params;
+      const task = await toggleTaskById(id);
+
+      if (!task) {
+        response.writeHead(404);
+        response.end(JSON.stringify({ message: 'Tarefa não encontrada.' }));
+        return;
+      }
+
+      response.writeHead(200);
+      response.end(JSON.stringify(task));
     },
   },
 ];

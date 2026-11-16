@@ -2,7 +2,7 @@
 
 Projeto em Node.js para praticar CRUD e manipulação de arquivos, conforme o `prd.md`.
 
-As Tarefas 01 a 06 preparam o servidor HTTP, o registro de rotas, o armazenamento JSON, o modelo de tarefa e a criação, listagem, busca, atualização e remoção de tarefas pelas rotas `POST /tasks`, `GET /tasks`, `PUT /tasks/:id` e `DELETE /tasks/:id`.
+As Tarefas 01 a 07 preparam o servidor HTTP, o registro de rotas, o armazenamento JSON, o modelo de tarefa e a criação, listagem, busca, atualização, remoção e alternância da conclusão de tarefas pelas rotas `POST /tasks`, `GET /tasks`, `PUT /tasks/:id`, `DELETE /tasks/:id` e `PATCH /tasks/:id/complete`.
 
 ## Requisitos
 
@@ -113,6 +113,20 @@ Invoke-RestMethod -Method Delete -Uri 'http://localhost:3333/tasks/ID_DA_TAREFA'
 
 A resposta será `204`, sem corpo. A tarefa será removida do arquivo JSON, preservando as demais tarefas. Se o ID não existir, a resposta será `404` com `{"message":"Tarefa não encontrada."}`.
 
+## Alternar a conclusão de uma tarefa
+
+Envie uma requisição `PATCH http://localhost:3333/tasks/ID_DA_TAREFA/complete`, substituindo `ID_DA_TAREFA` pelo `id` retornado na criação. Não é necessário enviar um corpo.
+
+No PowerShell:
+
+```powershell
+Invoke-RestMethod -Method Patch -Uri 'http://localhost:3333/tasks/ID_DA_TAREFA/complete'
+```
+
+Se a tarefa estiver pendente, `completed_at` recebe a data atual em formato ISO 8601. Se já estiver concluída, `completed_at` volta a ser `null`. Cada requisição alterna o status e atualiza `updated_at`, preservando os demais dados.
+
+A resposta será `200` com a tarefa atualizada e salva no arquivo JSON. Se o ID não existir, a resposta será `404` com `{"message":"Tarefa não encontrada."}`.
+
 ## Estrutura
 
 ```text
@@ -124,7 +138,7 @@ src/
   task.js      # Estrutura, criação e atualização dos dados de uma tarefa
 test/
   task.test.js # Verificação das regras do modelo
-  routes.test.js # Verificação da criação, listagem, busca, atualização e remoção pela API
+  routes.test.js # Verificação da criação, listagem, busca, atualização, remoção e conclusão pela API
 data/
   tasks.json   # Criado automaticamente ao iniciar a API
 ```
@@ -157,3 +171,5 @@ npm test
 ```
 
 No PowerShell, também é possível usar `npm.cmd test`.
+
+Os testes verificam as regras do modelo e as rotas da API, incluindo a conclusão e a reabertura de tarefas, o retorno para ID inexistente, a persistência dos dados e as alterações simultâneas.

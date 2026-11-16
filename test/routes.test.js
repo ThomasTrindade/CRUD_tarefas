@@ -60,6 +60,10 @@ function deleteTask(id) {
   return fetch(`${url}/${id}`, { method: 'DELETE' });
 }
 
+function patchTask(id) {
+  return fetch(`${url}/${id}/complete`, { method: 'PATCH' });
+}
+
 async function createSavedTasks(inputs) {
   const tasks = [];
 
@@ -461,4 +465,145 @@ test('DELETE simultâneo da mesma tarefa remove uma vez e retorna 404 na outra r
   }
 
   assert.deepEqual(await readSavedTasks(), [tasks[1]]);
+});
+
+test('PATCH /tasks/:id/complete conclui e salva a tarefa preservando os demais dados', async () => {
+  const tasks = await createSavedTasks([
+    { title: 'Estudar Node.js', description: 'Praticar arquivos JSON.' },
+    { title: 'Outra tarefa', description: 'Deve permanecer igual.' },
+  ]);
+  tasks[0].updated_at = '2026-01-01T10:00:00.000Z';
+  await writeFile(join(directory, 'data/tasks.json'), JSON.stringify(tasks), 'utf8');
+
+  const before = Date.now();
+  const response = await patchTask(tasks[0].id);
+  const completed = await response.json();
+  const after = Date.now();
+
+  assert.equal(response.status, 200);
+  assert.match(response.headers.get('content-type'), /application\/json/);
+  assert.equal(new Date(completed.completed_at).toISOString(), completed.completed_at);
+  assert.ok(Date.parse(completed.completed_at) >= before);
+  assert.ok(Date.parse(completed.completed_at) <= after);
+  assert.equal(new Date(completed.updated_at).toISOString(), completed.updated_at);
+  assert.ok(Date.parse(completed.updated_at) >= Date.parse(completed.completed_at));
+  assert.ok(Date.parse(completed.updated_at) <= after);
+  assert.notEqual(completed.updated_at, tasks[0].updated_at);
+  assert.deepEqual(completed, {
+    ...tasks[0],
+    completed_at: completed.completed_at,
+    updated_at: completed.updated_at,
+  });
+  assert.deepEqual(await readSavedTasks(), [completed, tasks[1]]);
+
+  const listResponse = await fetch(url);
+  assert.equal(listResponse.status, 200);
+  assert.deepEqual(await listResponse.json(), [completed, tasks[1]]);
+});
+
+test('PATCH /tasks/:id/complete reabre uma tarefa concluída e atualiza a data de alteração', async () => {
+  const tasks = await createSavedTasks([
+    { title: 'Tarefa concluída', description: 'Voltará a ficar pendente.' },
+    { title: 'Outra tarefa', description: 'Deve permanecer igual.' },
+  ]);
+  tasks[0].completed_at = '2026-01-02T10:00:00.000Z';
+  tasks[0].updated_at = tasks[0].completed_at;
+  await writeFile(join(directory, 'data/tasks.json'), JSON.stringify(tasks), 'utf8');
+
+  const before = Date.now();
+  const response = await patchTask(tasks[0].id);
+  const reopened = await response.json();
+  const after = Date.now();
+
+  assert.equal(response.status, 200);
+  assert.equal(new Date(reopened.updated_at).toISOString(), reopened.updated_at);
+  assert.ok(Date.parse(reopened.updated_at) >= before);
+  assert.ok(Date.parse(reopened.updated_at) <= after);
+  assert.notEqual(reopened.updated_at, tasks[0].updated_at);
+  assert.deepEqual(reopened, {
+    ...tasks[0],
+    completed_at: null,
+    updated_at: reopened.updated_at,
+  });
+  assert.deepEqual(await readSavedTasks(), [reopened, tasks[1]]);
+});
+
+test('PATCH /tasks/:id/complete retorna 404 para id inexistente ou removido sem alterar os dados', async () => {
+  const tasks = await createSavedTasks([
+    { title: 'Tarefa mantida', description: 'Deve permanecer igual.' },
+    { title: 'Tarefa removida', description: 'Será removida antes da conclusão.' },
+  ]);
+  const removedResponse = await deleteTask(tasks[1].id);
+  assert.equal(removedResponse.status, 204);
+  await removedResponse.text();
+
+  for (const id of ['id-inexistente', tasks[1].id]) {
+    const response = await patchTask(id);
+
+    assert.equal(response.status, 404);
+    assert.deepEqual(await response.json(), { message: 'Tarefa não encontrada.' });
+    assert.deepEqual(await readSavedTasks(), [tasks[0]]);
+  }
+});
+
+test('PATCH simultâneo da mesma tarefa alterna a conclusão duas vezes', async () => {
+  const tasks = await createSavedTasks([
+    { title: 'Tarefa alternada', description: 'Deve terminar pendente.' },
+    { title: 'Outra tarefa', description: 'Deve permanecer igual.' },
+  ]);
+  const responses = await Promise.all([
+    patchTask(tasks[0].id),
+    patchTask(tasks[0].id),
+  ]);
+
+  for (const response of responses) {
+    assert.equal(response.status, 200);
+  }
+
+  const changedTasks = await Promise.all(responses.map((response) => response.json()));
+  assert.equal(changedTasks.filter((task) => task.completed_at === null).length, 1);
+  assert.equal(changedTasks.filter((task) => typeof task.completed_at === 'string').length, 1);
+
+  const savedTasks = await readSavedTasks();
+  assert.deepEqual(savedTasks, [
+    { ...tasks[0], updated_at: savedTasks[0].updated_at },
+    tasks[1],
+  ]);
+});
+
+test('PATCH, PUT, DELETE e POST preservam as alterações em requisições simultâneas', async () => {
+  const tasks = await createSavedTasks([
+    { title: 'Tarefa alterada', description: 'Será concluída e atualizada.' },
+    { title: 'Tarefa removida', description: 'Será removida durante a conclusão.' },
+  ]);
+  const newTask = { title: 'Nova tarefa', description: 'Criada durante a conclusão.' };
+  const [completedResponse, updatedResponse, removedResponse, createdResponse] = await Promise.all([
+    patchTask(tasks[0].id),
+    putTask(tasks[0].id, JSON.stringify({ title: 'Título atualizado' })),
+    deleteTask(tasks[1].id),
+    postTask(JSON.stringify(newTask)),
+  ]);
+
+  assert.equal(completedResponse.status, 200);
+  const completed = await completedResponse.json();
+  assert.equal(new Date(completed.completed_at).toISOString(), completed.completed_at);
+  assert.equal(updatedResponse.status, 200);
+  await updatedResponse.json();
+  assert.equal(removedResponse.status, 204);
+  assert.equal(await removedResponse.text(), '');
+  assert.equal(createdResponse.status, 201);
+  const created = await createdResponse.json();
+  assert.equal(created.title, newTask.title);
+  assert.equal(created.description, newTask.description);
+
+  const savedTasks = await readSavedTasks();
+  assert.deepEqual(savedTasks, [
+    {
+      ...tasks[0],
+      title: 'Título atualizado',
+      completed_at: completed.completed_at,
+      updated_at: savedTasks[0].updated_at,
+    },
+    created,
+  ]);
 });

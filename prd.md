@@ -100,22 +100,22 @@ Cada bloco abaixo representa uma tarefa de implementação. As tarefas 09 e 10 s
 
 ## Tarefa 07 — Alternar a conclusão de uma tarefa
 
-**Rota informada no PRD original:** `PATCH /tasks/:id/completea`
+**Rota:** `PATCH /tasks/:id/complete`
 
-> Ponto de atenção: confirmar se o sufixo `completea` é intencional ou se a rota deve ser `PATCH /tasks/:id/complete`.
+> Foi adotado o sufixo `complete`, conforme o checklist abaixo. O sufixo `completea` informado no PRD original foi tratado como um erro de escrita.
 
 **Checklist de implementação:**
 
-- [ ] Desenvolver a rota `PATCH /tasks/:id/complete` para marcar uma tarefa como concluída/pendente.
-- [ ] Adicionar a validação de existência do `id` na rota `PATCH /tasks/:id/complete`.
+- [x] Desenvolver a rota `PATCH /tasks/:id/complete` para marcar uma tarefa como concluída/pendente.
+- [x] Adicionar a validação de existência do `id` na rota `PATCH /tasks/:id/complete`.
 
 **Detalhamento:**
 
-- [ ] Receber o `id` da tarefa pelos parâmetros da rota.
-- [ ] Validar se a tarefa existe antes de alterar seu status.
-- [ ] Marcar uma tarefa como concluída, preenchendo `completed_at` com a data de conclusão.
-- [ ] Marcar uma tarefa concluída como não concluída, retornando `completed_at` para `null`.
-- [ ] Atualizar o campo `updated_at` após a mudança de status.
+- [x] Receber o `id` da tarefa pelos parâmetros da rota.
+- [x] Validar se a tarefa existe antes de alterar seu status.
+- [x] Marcar uma tarefa como concluída, preenchendo `completed_at` com a data de conclusão.
+- [x] Marcar uma tarefa concluída como não concluída, retornando `completed_at` para `null`.
+- [x] Atualizar o campo `updated_at` após a mudança de status.
 
 ---
 
