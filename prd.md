@@ -125,18 +125,18 @@ Cada bloco abaixo representa uma tarefa de implementação. As tarefas 09 e 10 s
 
 **Checklist de implementação:**
 
-- [ ] Criar um script separado para a importação de tarefas.
-- [ ] Utilizar a biblioteca `csv-parse` para ler o arquivo CSV.
-- [ ] Implementar a lógica de enviar requisição para `POST /tasks` para cada linha do CSV no script de importação.
+- [x] Criar um script separado para a importação de tarefas.
+- [x] Utilizar a biblioteca `csv-parse` para ler o arquivo CSV.
+- [x] Implementar a lógica de enviar requisição para `POST /tasks` para cada linha do CSV no script de importação.
 
 **Detalhamento:**
 
-- [ ] Instalar a biblioteca `csv-parse` com o gerenciador de pacotes de preferência.
-- [ ] Criar um script separado para ler o arquivo CSV.
-- [ ] Processar o CSV com o parser da biblioteca e um iterador assíncrono, utilizando `for await`.
-- [ ] Pular a primeira linha do CSV, que contém o cabeçalho.
-- [ ] Extrair os campos `title` e `description` de cada linha.
-- [ ] Realizar uma requisição para `POST /tasks` para cada linha, enviando os campos necessários no corpo da requisição.
+- [x] Instalar a biblioteca `csv-parse` com o gerenciador de pacotes de preferência.
+- [x] Criar um script separado para ler o arquivo CSV.
+- [x] Processar o CSV com o parser da biblioteca e um iterador assíncrono, utilizando `for await`.
+- [x] Pular a primeira linha do CSV, que contém o cabeçalho.
+- [x] Extrair os campos `title` e `description` de cada linha.
+- [x] Realizar uma requisição para `POST /tasks` para cada linha, enviando os campos necessários no corpo da requisição.
 
 **Formato recomendado do CSV:**
 

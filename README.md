@@ -4,10 +4,12 @@ Projeto em Node.js para praticar CRUD e manipulação de arquivos, conforme o `p
 
 As Tarefas 01 a 07 preparam o servidor HTTP, o registro de rotas, o armazenamento JSON, o modelo de tarefa e a criação, listagem, busca, atualização, remoção e alternância da conclusão de tarefas pelas rotas `POST /tasks`, `GET /tasks`, `PUT /tasks/:id`, `DELETE /tasks/:id` e `PATCH /tasks/:id/complete`.
 
+A Tarefa 08 adiciona o script `import-csv.js` para importar tarefas de um CSV pela rota `POST /tasks`.
+
 ## Requisitos
 
 - Node.js 22 ou superior.
-- Nenhuma dependência externa nesta etapa.
+- Biblioteca `csv-parse`, instalada com `npm install` (ou `npm.cmd install` no PowerShell).
 
 ## Executar
 
@@ -127,9 +129,43 @@ Se a tarefa estiver pendente, `completed_at` recebe a data atual em formato ISO 
 
 A resposta será `200` com a tarefa atualizada e salva no arquivo JSON. Se o ID não existir, a resposta será `404` com `{"message":"Tarefa não encontrada."}`.
 
+## Importar tarefas de um CSV
+
+Com a API em execução (`npm.cmd start`), abra outro terminal na pasta do projeto e execute:
+
+```powershell
+npm.cmd run import:csv -- tasks.csv
+```
+
+O arquivo `tasks.csv` contém cinco tarefas de exemplo. Para importar outro arquivo, informe seu caminho. Use aspas se o caminho contiver espaços:
+
+```powershell
+npm.cmd run import:csv -- "C:\arquivos\minhas tarefas.csv"
+```
+
+O CSV deve usar UTF-8, vírgula como separador e o cabeçalho `title,description`, nesta ordem:
+
+```csv
+title,description
+Estudar Node.js,Praticar arquivos JSON.
+Revisar projeto,"Conferir rotas, testes e documentação."
+```
+
+O script usa `csv-parse` e `for await`, ignora o cabeçalho e as linhas vazias e envia uma requisição `POST /tasks` por registro. Campos com vírgulas ou quebras de linha devem ficar entre aspas duplas. Cada registro deve ter dois campos.
+
+A URL padrão é `http://localhost:3333`. O script também respeita `PORT`, se definida no terminal da importação. Para informar outra URL da API:
+
+```powershell
+npm.cmd run import:csv -- tasks.csv http://localhost:3000
+```
+
+Ao terminar, o script informa a quantidade importada. Se houver erro no arquivo ou na API, ele interrompe a importação, informa quantas tarefas foram importadas e encerra com código `1`. As tarefas já criadas permanecem salvas. Executar o mesmo arquivo novamente cria novas tarefas, inclusive para registros já importados.
+
 ## Estrutura
 
 ```text
+import-csv.js  # Importação de tarefas do CSV pela API
+tasks.csv      # Arquivo CSV de exemplo
 src/
   app.js       # Servidor HTTP e encaminhamento das requisições
   server.js    # Inicialização do armazenamento e da porta HTTP
@@ -139,6 +175,7 @@ src/
 test/
   task.test.js # Verificação das regras do modelo
   routes.test.js # Verificação da criação, listagem, busca, atualização, remoção e conclusão pela API
+  import-csv.test.js # Verificação da importação e dos erros do CSV e da API
 data/
   tasks.json   # Criado automaticamente ao iniciar a API
 ```
@@ -172,4 +209,4 @@ npm test
 
 No PowerShell, também é possível usar `npm.cmd test`.
 
-Os testes verificam as regras do modelo e as rotas da API, incluindo a conclusão e a reabertura de tarefas, o retorno para ID inexistente, a persistência dos dados e as alterações simultâneas.
+Os testes verificam as regras do modelo, as rotas da API e a importação de CSV, incluindo a conclusão e a reabertura de tarefas, o retorno para ID inexistente, a persistência dos dados, as alterações simultâneas e os erros de importação.
