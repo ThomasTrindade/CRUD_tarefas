@@ -56,3 +56,22 @@ export function updateTaskById(id, { title, description }) {
   saveQueue = save.catch(() => {});
   return save;
 }
+
+export function deleteTaskById(id) {
+  // Usa a mesma fila da criação e atualização para preservar os outros dados.
+  const save = saveQueue.then(async () => {
+    const tasks = await readTasks();
+    const index = tasks.findIndex((task) => task.id === id);
+
+    if (index === -1) {
+      return null;
+    }
+
+    const [task] = tasks.splice(index, 1);
+    await writeTasks(tasks);
+    return task;
+  });
+
+  saveQueue = save.catch(() => {});
+  return save;
+}

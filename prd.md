@@ -87,14 +87,14 @@ Cada bloco abaixo representa uma tarefa de implementação. As tarefas 09 e 10 s
 
 **Checklist de implementação:**
 
-- [ ] Desenvolver a rota `DELETE /tasks/:id` para remover uma tarefa.
-- [ ] Adicionar a validação de existência do `id` na rota `DELETE /tasks/:id`.
+- [x] Desenvolver a rota `DELETE /tasks/:id` para remover uma tarefa.
+- [x] Adicionar a validação de existência do `id` na rota `DELETE /tasks/:id`.
 
 **Detalhamento:**
 
-- [ ] Receber o `id` da tarefa pelos parâmetros da rota.
-- [ ] Validar se a tarefa existe antes de removê-la.
-- [ ] Remover a tarefa correspondente ao `id` informado.
+- [x] Receber o `id` da tarefa pelos parâmetros da rota.
+- [x] Validar se a tarefa existe antes de removê-la.
+- [x] Remover a tarefa correspondente ao `id` informado.
 
 ---
 

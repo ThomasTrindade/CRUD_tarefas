@@ -2,7 +2,7 @@
 
 Projeto em Node.js para praticar CRUD e manipulação de arquivos, conforme o `prd.md`.
 
-As Tarefas 01 a 05 preparam o servidor HTTP, o registro de rotas, o armazenamento JSON, o modelo de tarefa e a criação, listagem, busca e atualização de tarefas pelas rotas `POST /tasks`, `GET /tasks` e `PUT /tasks/:id`.
+As Tarefas 01 a 06 preparam o servidor HTTP, o registro de rotas, o armazenamento JSON, o modelo de tarefa e a criação, listagem, busca, atualização e remoção de tarefas pelas rotas `POST /tasks`, `GET /tasks`, `PUT /tasks/:id` e `DELETE /tasks/:id`.
 
 ## Requisitos
 
@@ -101,6 +101,18 @@ Invoke-RestMethod -Method Put -Uri 'http://localhost:3333/tasks/ID_DA_TAREFA' -C
 
 Se a tarefa não existir, a resposta será `404` com `{"message":"Tarefa não encontrada."}`. JSON inválido ou um corpo que não seja um objeto JSON retorna `400`. A validação dos valores de `title` e `description` continua prevista na Tarefa 09.
 
+## Remover uma tarefa
+
+Envie uma requisição `DELETE http://localhost:3333/tasks/ID_DA_TAREFA`, substituindo `ID_DA_TAREFA` pelo `id` retornado na criação. Não é necessário enviar um corpo.
+
+No PowerShell:
+
+```powershell
+Invoke-RestMethod -Method Delete -Uri 'http://localhost:3333/tasks/ID_DA_TAREFA'
+```
+
+A resposta será `204`, sem corpo. A tarefa será removida do arquivo JSON, preservando as demais tarefas. Se o ID não existir, a resposta será `404` com `{"message":"Tarefa não encontrada."}`.
+
 ## Estrutura
 
 ```text
@@ -112,7 +124,7 @@ src/
   task.js      # Estrutura, criação e atualização dos dados de uma tarefa
 test/
   task.test.js # Verificação das regras do modelo
-  routes.test.js # Verificação da criação, listagem, busca e atualização pela API
+  routes.test.js # Verificação da criação, listagem, busca, atualização e remoção pela API
 data/
   tasks.json   # Criado automaticamente ao iniciar a API
 ```

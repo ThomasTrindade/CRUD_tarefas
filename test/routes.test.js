@@ -56,6 +56,10 @@ function putTask(id, body) {
   });
 }
 
+function deleteTask(id) {
+  return fetch(`${url}/${id}`, { method: 'DELETE' });
+}
+
 async function createSavedTasks(inputs) {
   const tasks = [];
 
@@ -349,4 +353,112 @@ test('PUT preserva mudanças parciais simultâneas na mesma tarefa', async () =>
     description: 'Descrição atualizada.',
     updated_at: savedTasks[0].updated_at,
   });
+});
+
+test('DELETE /tasks/:id remove apenas a tarefa informada e preserva as demais', async () => {
+  const tasks = await createSavedTasks([
+    { title: 'Primeira tarefa', description: 'Deve permanecer igual.' },
+    { title: 'Segunda tarefa', description: 'Será removida.' },
+    { title: 'Terceira tarefa', description: 'Deve permanecer igual.' },
+  ]);
+  const response = await deleteTask(tasks[1].id);
+
+  assert.equal(response.status, 204);
+  assert.equal(await response.text(), '');
+  assert.deepEqual(await readSavedTasks(), [tasks[0], tasks[2]]);
+
+  const listResponse = await fetch(url);
+  assert.equal(listResponse.status, 200);
+  assert.deepEqual(await listResponse.json(), [tasks[0], tasks[2]]);
+});
+
+test('DELETE /tasks/:id remove a última tarefa e salva uma lista vazia', async () => {
+  const [task] = await createSavedTasks([
+    { title: 'Única tarefa', description: 'Será removida.' },
+  ]);
+  const response = await deleteTask(task.id);
+
+  assert.equal(response.status, 204);
+  assert.equal(await response.text(), '');
+  assert.deepEqual(await readSavedTasks(), []);
+
+  const listResponse = await fetch(url);
+  assert.equal(listResponse.status, 200);
+  assert.deepEqual(await listResponse.json(), []);
+});
+
+test('DELETE /tasks/:id retorna 404 para id inexistente ou já removido sem alterar os dados', async () => {
+  const tasks = await createSavedTasks([
+    { title: 'Tarefa mantida', description: 'Deve permanecer salva.' },
+    { title: 'Tarefa removida', description: 'Será removida uma vez.' },
+  ]);
+  const missingResponse = await deleteTask('id-inexistente');
+
+  assert.equal(missingResponse.status, 404);
+  assert.deepEqual(await missingResponse.json(), { message: 'Tarefa não encontrada.' });
+  assert.deepEqual(await readSavedTasks(), tasks);
+
+  const removedResponse = await deleteTask(tasks[1].id);
+  assert.equal(removedResponse.status, 204);
+  await removedResponse.text();
+
+  const repeatedResponse = await deleteTask(tasks[1].id);
+  assert.equal(repeatedResponse.status, 404);
+  assert.deepEqual(await repeatedResponse.json(), { message: 'Tarefa não encontrada.' });
+  assert.deepEqual(await readSavedTasks(), [tasks[0]]);
+});
+
+test('DELETE, PUT e POST preservam as alterações em requisições simultâneas', async () => {
+  const tasks = await createSavedTasks([
+    { title: 'Primeira tarefa', description: 'Será removida.' },
+    { title: 'Segunda tarefa', description: 'Será atualizada.' },
+    { title: 'Terceira tarefa', description: 'Será removida.' },
+  ]);
+  const newTask = { title: 'Nova tarefa', description: 'Criada durante as remoções.' };
+  const [firstResponse, updatedResponse, thirdResponse, createdResponse] = await Promise.all([
+    deleteTask(tasks[0].id),
+    putTask(tasks[1].id, JSON.stringify({ title: 'Título atualizado' })),
+    deleteTask(tasks[2].id),
+    postTask(JSON.stringify(newTask)),
+  ]);
+
+  assert.equal(firstResponse.status, 204);
+  assert.equal(await firstResponse.text(), '');
+  assert.equal(thirdResponse.status, 204);
+  assert.equal(await thirdResponse.text(), '');
+  assert.equal(updatedResponse.status, 200);
+  const updated = await updatedResponse.json();
+  assert.deepEqual(updated, {
+    ...tasks[1],
+    title: 'Título atualizado',
+    updated_at: updated.updated_at,
+  });
+  assert.equal(createdResponse.status, 201);
+  const created = await createdResponse.json();
+  assert.equal(created.title, newTask.title);
+  assert.equal(created.description, newTask.description);
+  assert.deepEqual(await readSavedTasks(), [updated, created]);
+});
+
+test('DELETE simultâneo da mesma tarefa remove uma vez e retorna 404 na outra requisição', async () => {
+  const tasks = await createSavedTasks([
+    { title: 'Tarefa removida', description: 'Será removida uma vez.' },
+    { title: 'Tarefa mantida', description: 'Deve permanecer igual.' },
+  ]);
+  const responses = await Promise.all([
+    deleteTask(tasks[0].id),
+    deleteTask(tasks[0].id),
+  ]);
+
+  assert.deepEqual(responses.map((response) => response.status).sort(), [204, 404]);
+
+  for (const response of responses) {
+    if (response.status === 204) {
+      assert.equal(await response.text(), '');
+    } else {
+      assert.deepEqual(await response.json(), { message: 'Tarefa não encontrada.' });
+    }
+  }
+
+  assert.deepEqual(await readSavedTasks(), [tasks[1]]);
 });

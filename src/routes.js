@@ -1,4 +1,4 @@
-import { addTask, readTasks, updateTaskById } from './database.js';
+import { addTask, deleteTaskById, readTasks, updateTaskById } from './database.js';
 import { createTask } from './task.js';
 
 export const routes = [
@@ -100,6 +100,23 @@ export const routes = [
 
       response.writeHead(200);
       response.end(JSON.stringify(task));
+    },
+  },
+  {
+    method: 'DELETE',
+    path: '/tasks/:id',
+    async handler(request, response) {
+      const { id } = request.params;
+      const task = await deleteTaskById(id);
+
+      if (!task) {
+        response.writeHead(404);
+        response.end(JSON.stringify({ message: 'Tarefa não encontrada.' }));
+        return;
+      }
+
+      response.writeHead(204);
+      response.end();
     },
   },
 ];
