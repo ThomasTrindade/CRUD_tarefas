@@ -6,14 +6,37 @@ export const app = createServer(async (request, response) => {
 
   try {
     const { pathname } = new URL(request.url, 'http://localhost');
-    const route = routes.find(
-      (route) => route.method === request.method && route.path === pathname,
-    );
+    const pathParts = pathname.split('/');
+    const route = routes.find((route) => {
+      if (route.method !== request.method) {
+        return false;
+      }
+
+      const routeParts = route.path.split('/');
+
+      return routeParts.length === pathParts.length && routeParts.every((part, index) => {
+        if (part.startsWith(':')) {
+          return pathParts[index] !== '';
+        }
+
+        return part === pathParts[index];
+      });
+    });
 
     if (!route) {
       response.writeHead(404);
       response.end(JSON.stringify({ message: 'Rota não encontrada.' }));
       return;
+    }
+
+    request.params = {};
+    const routeParts = route.path.split('/');
+
+    for (let index = 0; index < routeParts.length; index++) {
+      if (routeParts[index].startsWith(':')) {
+        const name = routeParts[index].slice(1);
+        request.params[name] = pathParts[index];
+      }
     }
 
     await route.handler(request, response);

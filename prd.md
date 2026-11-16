@@ -68,16 +68,16 @@ Cada bloco abaixo representa uma tarefa de implementação. As tarefas 09 e 10 s
 
 **Checklist de implementação:**
 
-- [ ] Desenvolver a rota `PUT /tasks/:id` para atualizar uma tarefa.
-- [ ] Adicionar a validação de existência do `id` na rota `PUT /tasks/:id`.
+- [x] Desenvolver a rota `PUT /tasks/:id` para atualizar uma tarefa.
+- [x] Adicionar a validação de existência do `id` na rota `PUT /tasks/:id`.
 
 **Detalhamento:**
 
-- [ ] Receber o `id` da tarefa pelos parâmetros da rota.
-- [ ] Validar se a tarefa existe antes de atualizá-la.
-- [ ] Receber `title` e/ou `description` no corpo da requisição.
-- [ ] Atualizar apenas os campos informados, preservando os demais dados.
-- [ ] Atualizar o campo `updated_at` após a modificação.
+- [x] Receber o `id` da tarefa pelos parâmetros da rota.
+- [x] Validar se a tarefa existe antes de atualizá-la.
+- [x] Receber `title` e/ou `description` no corpo da requisição.
+- [x] Atualizar apenas os campos informados, preservando os demais dados.
+- [x] Atualizar o campo `updated_at` após a modificação.
 
 ---
 

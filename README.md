@@ -2,7 +2,7 @@
 
 Projeto em Node.js para praticar CRUD e manipulação de arquivos, conforme o `prd.md`.
 
-As Tarefas 01 a 04 preparam o servidor HTTP, o registro de rotas, o armazenamento JSON, o modelo de tarefa e a criação, listagem e busca de tarefas pelas rotas `POST /tasks` e `GET /tasks`.
+As Tarefas 01 a 05 preparam o servidor HTTP, o registro de rotas, o armazenamento JSON, o modelo de tarefa e a criação, listagem, busca e atualização de tarefas pelas rotas `POST /tasks`, `GET /tasks` e `PUT /tasks/:id`.
 
 ## Requisitos
 
@@ -81,6 +81,26 @@ No PowerShell:
 Invoke-RestMethod -Method Get -Uri 'http://localhost:3333/tasks?title=node&description=arquivos'
 ```
 
+## Atualizar uma tarefa
+
+Envie uma requisição `PUT http://localhost:3333/tasks/ID_DA_TAREFA` com `Content-Type: application/json` e o corpo:
+
+```json
+{
+  "title": "Revisar Node.js"
+}
+```
+
+É possível informar `title`, `description` ou ambos. A resposta será `200` com a tarefa atualizada e salva no arquivo JSON. Os campos não informados são preservados, e `updated_at` recebe a data da atualização. Os campos `id`, `created_at` e `completed_at` são preservados mesmo se enviados no corpo.
+
+No PowerShell, substitua `ID_DA_TAREFA` pelo `id` retornado na criação:
+
+```powershell
+Invoke-RestMethod -Method Put -Uri 'http://localhost:3333/tasks/ID_DA_TAREFA' -ContentType 'application/json; charset=utf-8' -Body '{"title":"Revisar Node.js"}'
+```
+
+Se a tarefa não existir, a resposta será `404` com `{"message":"Tarefa não encontrada."}`. JSON inválido ou um corpo que não seja um objeto JSON retorna `400`. A validação dos valores de `title` e `description` continua prevista na Tarefa 09.
+
 ## Estrutura
 
 ```text
@@ -92,7 +112,7 @@ src/
   task.js      # Estrutura, criação e atualização dos dados de uma tarefa
 test/
   task.test.js # Verificação das regras do modelo
-  routes.test.js # Verificação da criação, listagem e busca de tarefas pela API
+  routes.test.js # Verificação da criação, listagem, busca e atualização pela API
 data/
   tasks.json   # Criado automaticamente ao iniciar a API
 ```

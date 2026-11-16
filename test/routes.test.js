@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { once } from 'node:events';
-import { cp, mkdtemp, readFile, rm } from 'node:fs/promises';
+import { cp, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, test } from 'node:test';
@@ -43,6 +43,14 @@ async function readSavedTasks() {
 function postTask(body) {
   return fetch(url, {
     method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body,
+  });
+}
+
+function putTask(id, body) {
+  return fetch(`${url}/${id}`, {
+    method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body,
   });
@@ -209,4 +217,136 @@ test('POST /tasks rejeita JSON inválido e corpos que não são objetos sem alte
     assert.equal(typeof error.message, 'string');
     assert.deepEqual(await readSavedTasks(), savedTasks);
   }
+});
+
+test('PUT /tasks/:id atualiza os campos informados e preserva os demais dados', async () => {
+  const tasks = await createSavedTasks([
+    { title: 'Estudar Node.js', description: 'Praticar arquivos JSON.' },
+    { title: 'Outra tarefa', description: 'Deve permanecer igual.' },
+  ]);
+  tasks[0].created_at = '2026-01-01T10:00:00.000Z';
+  tasks[0].completed_at = '2026-01-02T10:00:00.000Z';
+  tasks[0].updated_at = tasks[0].completed_at;
+  await writeFile(join(directory, 'data/tasks.json'), JSON.stringify(tasks), 'utf8');
+
+  const changes = [
+    { title: 'Revisar Node.js' },
+    { description: 'Conferir a atualização de tarefas.' },
+    { title: 'Revisar o projeto', description: 'Conferir as rotas.' },
+    { title: '', description: '' },
+  ];
+
+  for (const change of changes) {
+    const before = Date.now();
+    const response = await putTask(tasks[0].id, JSON.stringify({
+      ...change,
+      id: 'outro-id',
+      created_at: '2000-01-01T00:00:00.000Z',
+      completed_at: null,
+      updated_at: '2000-01-01T00:00:00.000Z',
+      unexpected: true,
+    }));
+    const updated = await response.json();
+    const after = Date.now();
+
+    assert.equal(response.status, 200);
+    assert.match(response.headers.get('content-type'), /application\/json/);
+    assert.equal(new Date(updated.updated_at).toISOString(), updated.updated_at);
+    assert.ok(Date.parse(updated.updated_at) >= before);
+    assert.ok(Date.parse(updated.updated_at) <= after);
+    assert.deepEqual(updated, {
+      ...tasks[0],
+      ...change,
+      updated_at: updated.updated_at,
+    });
+
+    tasks[0] = updated;
+    assert.deepEqual(await readSavedTasks(), tasks);
+    const listResponse = await fetch(url);
+    assert.equal(listResponse.status, 200);
+    assert.deepEqual(await listResponse.json(), tasks);
+  }
+});
+
+test('PUT /tasks/:id retorna 404 para uma tarefa inexistente sem alterar os dados', async () => {
+  const tasks = await createSavedTasks([
+    { title: 'Tarefa existente', description: 'Deve permanecer salva.' },
+  ]);
+  const response = await putTask('id-inexistente', JSON.stringify({ title: 'Novo título' }));
+
+  assert.equal(response.status, 404);
+  assert.deepEqual(await response.json(), { message: 'Tarefa não encontrada.' });
+  assert.deepEqual(await readSavedTasks(), tasks);
+});
+
+test('PUT /tasks/:id rejeita JSON inválido e corpos que não são objetos sem alterar os dados', async () => {
+  const tasks = await createSavedTasks([
+    { title: 'Tarefa existente', description: 'Deve permanecer salva.' },
+  ]);
+
+  for (const body of ['{"title":', '', 'null', '[]', '"texto"', '42', 'true']) {
+    const response = await putTask(tasks[0].id, body);
+    const error = await response.json();
+
+    assert.equal(response.status, 400, `Corpo recebido: ${body}`);
+    assert.equal(typeof error.message, 'string');
+    assert.deepEqual(await readSavedTasks(), tasks);
+  }
+});
+
+test('PUT e POST preservam todas as tarefas em requisições simultâneas', async () => {
+  const tasks = await createSavedTasks([
+    { title: 'Primeira tarefa', description: 'Primeira descrição.' },
+    { title: 'Segunda tarefa', description: 'Segunda descrição.' },
+    { title: 'Terceira tarefa', description: 'Terceira descrição.' },
+  ]);
+  const newTask = { title: 'Nova tarefa', description: 'Criada durante as atualizações.' };
+  const responses = await Promise.all([
+    ...tasks.map((task) => putTask(task.id, JSON.stringify({ title: `${task.title} atualizada` }))),
+    postTask(JSON.stringify(newTask)),
+  ]);
+  const savedTasks = await readSavedTasks();
+
+  assert.equal(savedTasks.length, tasks.length + 1);
+
+  for (let index = 0; index < tasks.length; index += 1) {
+    const response = responses[index];
+    const updated = await response.json();
+
+    assert.equal(response.status, 200);
+    assert.equal(updated.title, `${tasks[index].title} atualizada`);
+    assert.equal(updated.description, tasks[index].description);
+    assert.deepEqual(savedTasks.find((task) => task.id === updated.id), updated);
+  }
+
+  const createdResponse = responses[tasks.length];
+  const created = await createdResponse.json();
+  assert.equal(createdResponse.status, 201);
+  assert.equal(created.title, newTask.title);
+  assert.equal(created.description, newTask.description);
+  assert.deepEqual(savedTasks.find((task) => task.id === created.id), created);
+});
+
+test('PUT preserva mudanças parciais simultâneas na mesma tarefa', async () => {
+  const [task] = await createSavedTasks([
+    { title: 'Título original', description: 'Descrição original.' },
+  ]);
+  const responses = await Promise.all([
+    putTask(task.id, JSON.stringify({ title: 'Título atualizado' })),
+    putTask(task.id, JSON.stringify({ description: 'Descrição atualizada.' })),
+  ]);
+
+  for (const response of responses) {
+    assert.equal(response.status, 200);
+    await response.json();
+  }
+
+  const savedTasks = await readSavedTasks();
+  assert.equal(savedTasks.length, 1);
+  assert.deepEqual(savedTasks[0], {
+    ...task,
+    title: 'Título atualizado',
+    description: 'Descrição atualizada.',
+    updated_at: savedTasks[0].updated_at,
+  });
 });
