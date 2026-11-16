@@ -2,7 +2,7 @@
 
 Projeto em Node.js para praticar CRUD e manipulação de arquivos, conforme o `prd.md`.
 
-As Tarefas 01 a 03 preparam o servidor HTTP, o registro de rotas, o armazenamento JSON, o modelo de tarefa e a criação de tarefas pela rota `POST /tasks`.
+As Tarefas 01 a 04 preparam o servidor HTTP, o registro de rotas, o armazenamento JSON, o modelo de tarefa e a criação, listagem e busca de tarefas pelas rotas `POST /tasks` e `GET /tasks`.
 
 ## Requisitos
 
@@ -61,6 +61,26 @@ Invoke-RestMethod -Method Post -Uri 'http://localhost:3333/tasks' -ContentType '
 
 JSON inválido ou um corpo que não seja um objeto JSON retorna `400`. A validação da presença de `title` e `description` está prevista na Tarefa 09 do PRD.
 
+## Listar e buscar tarefas
+
+Faça uma requisição `GET http://localhost:3333/tasks` para listar todas as tarefas salvas. A resposta será `200` com um array de tarefas, ou `[]` quando não houver tarefas.
+
+Use os parâmetros da URL para buscar por trechos do título ou da descrição:
+
+```text
+GET /tasks?title=node
+GET /tasks?description=arquivos
+GET /tasks?title=node&description=arquivos
+```
+
+A busca ignora diferenças entre maiúsculas e minúsculas. Ao informar os dois parâmetros, serão retornadas apenas as tarefas que correspondam a ambos. Parâmetros vazios não filtram os resultados. Se nenhuma tarefa corresponder à busca, a resposta será `200` com `[]`.
+
+No PowerShell:
+
+```powershell
+Invoke-RestMethod -Method Get -Uri 'http://localhost:3333/tasks?title=node&description=arquivos'
+```
+
 ## Estrutura
 
 ```text
@@ -72,7 +92,7 @@ src/
   task.js      # Estrutura, criação e atualização dos dados de uma tarefa
 test/
   task.test.js # Verificação das regras do modelo
-  routes.test.js # Verificação da criação de tarefas pela API
+  routes.test.js # Verificação da criação, listagem e busca de tarefas pela API
 data/
   tasks.json   # Criado automaticamente ao iniciar a API
 ```

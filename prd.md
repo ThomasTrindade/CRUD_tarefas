@@ -51,14 +51,14 @@ Cada bloco abaixo representa uma tarefa de implementação. As tarefas 09 e 10 s
 
 **Checklist de implementação:**
 
-- [ ] Desenvolver a rota `GET /tasks` para listar todas as tarefas.
-- [ ] Implementar a funcionalidade de busca por `title` e `description` na rota `GET /tasks`.
+- [x] Desenvolver a rota `GET /tasks` para listar todas as tarefas.
+- [x] Implementar a funcionalidade de busca por `title` e `description` na rota `GET /tasks`.
 
 **Detalhamento:**
 
-- [ ] Listar todas as tarefas existentes.
-- [ ] Permitir a busca por tarefas pelo campo `title`.
-- [ ] Permitir a busca por tarefas pelo campo `description`.
+- [x] Listar todas as tarefas existentes.
+- [x] Permitir a busca por tarefas pelo campo `title`.
+- [x] Permitir a busca por tarefas pelo campo `description`.
 
 ---
 

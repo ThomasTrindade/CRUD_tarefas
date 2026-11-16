@@ -1,4 +1,4 @@
-import { addTask } from './database.js';
+import { addTask, readTasks } from './database.js';
 import { createTask } from './task.js';
 
 export const routes = [
@@ -8,6 +8,26 @@ export const routes = [
     handler(request, response) {
       response.writeHead(200);
       response.end(JSON.stringify({ status: 'ok' }));
+    },
+  },
+  {
+    method: 'GET',
+    path: '/tasks',
+    async handler(request, response) {
+      const { searchParams } = new URL(request.url, 'http://localhost');
+      const title = (searchParams.get('title') ?? '').toLowerCase();
+      const description = (searchParams.get('description') ?? '').toLowerCase();
+      const tasks = await readTasks();
+
+      const filteredTasks = tasks.filter((task) => {
+        const taskTitle = String(task.title ?? '').toLowerCase();
+        const taskDescription = String(task.description ?? '').toLowerCase();
+
+        return taskTitle.includes(title) && taskDescription.includes(description);
+      });
+
+      response.writeHead(200);
+      response.end(JSON.stringify(filteredTasks));
     },
   },
   {

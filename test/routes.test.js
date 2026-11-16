@@ -48,6 +48,91 @@ function postTask(body) {
   });
 }
 
+async function createSavedTasks(inputs) {
+  const tasks = [];
+
+  for (const input of inputs) {
+    const response = await postTask(JSON.stringify(input));
+    assert.equal(response.status, 201);
+    tasks.push(await response.json());
+  }
+
+  return tasks;
+}
+
+test('GET /tasks retorna uma lista vazia quando não há tarefas', async () => {
+  const response = await fetch(url);
+
+  assert.equal(response.status, 200);
+  assert.match(response.headers.get('content-type'), /application\/json/);
+  assert.deepEqual(await response.json(), []);
+});
+
+test('GET /tasks lista todas as tarefas salvas sem alterar seus dados', async () => {
+  const tasks = await createSavedTasks([
+    { title: 'Estudar Node.js', description: 'Praticar arquivos JSON.' },
+    { title: 'Revisar o projeto', description: 'Conferir as rotas.' },
+  ]);
+  const response = await fetch(url);
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), tasks);
+  assert.deepEqual(await readSavedTasks(), tasks);
+});
+
+test('GET /tasks busca por trechos do título e da descrição e combina os filtros', async () => {
+  const tasks = await createSavedTasks([
+    { title: 'Estudar Node.js', description: 'Praticar manipulação de arquivos.' },
+    { title: 'Revisar Node.js', description: 'Resolver exercícios de rotas.' },
+    { title: 'Estudar JavaScript', description: 'Revisar arquivos JSON.' },
+  ]);
+  const searches = [
+    { filters: { title: 'nOdE' }, expected: [tasks[0], tasks[1]] },
+    { filters: { description: 'ARQUIVOS' }, expected: [tasks[0], tasks[2]] },
+    { filters: { title: 'node', description: 'arquivos' }, expected: [tasks[0]] },
+    { filters: { description: 'manipulação de arquivos' }, expected: [tasks[0]] },
+    { filters: { title: 'arquivos' }, expected: [] },
+    { filters: { description: 'Node.js' }, expected: [] },
+    { filters: { title: 'node', description: 'JSON' }, expected: [] },
+    { filters: { title: '', description: '' }, expected: tasks },
+    { filters: { title: '', description: 'rotas' }, expected: [tasks[1]] },
+  ];
+
+  for (const { filters, expected } of searches) {
+    const query = new URLSearchParams(filters);
+    const response = await fetch(`${url}?${query}`);
+
+    assert.equal(response.status, 200, `Busca: ${query}`);
+    assert.deepEqual(await response.json(), expected, `Busca: ${query}`);
+  }
+
+  assert.deepEqual(await readSavedTasks(), tasks);
+});
+
+test('GET /tasks aceita registros com título ou descrição ausentes ou sem texto', async () => {
+  const tasks = await createSavedTasks([
+    {},
+    { title: null, description: null },
+    { title: 42, description: true },
+    { title: 'Estudar Node.js' },
+    { description: 'Praticar arquivos JSON.' },
+  ]);
+  const searches = [
+    { filters: {}, expected: tasks },
+    { filters: { title: 'node' }, expected: [tasks[3]] },
+    { filters: { description: 'arquivos' }, expected: [tasks[4]] },
+  ];
+
+  for (const { filters, expected } of searches) {
+    const response = await fetch(`${url}?${new URLSearchParams(filters)}`);
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), expected);
+  }
+
+  assert.deepEqual(await readSavedTasks(), tasks);
+});
+
 test('POST /tasks cria e salva tarefas com campos automáticos', async () => {
   const before = Date.now();
   const response = await postTask(JSON.stringify({
